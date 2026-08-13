@@ -406,7 +406,7 @@ function sendProof(input,lineId){
 }
 
 /* ── Coach ────────────────────────────────────────────────────────────────────── */
-function coachTab(t){_ktab=t;['sched','req','pay','money'].forEach(function(k){var el=document.getElementById('kt-'+k);if(el)el.classList.toggle('on',k===t);});renderCoach();}
+function coachTab(t){_ktab=t;['sched','req','pay','money'].forEach(function(k){var el=document.getElementById('kt-'+k);if(el)el.classList.toggle('on',k===t||(t==='post'&&k==='sched'));});renderCoach();}
 
 function pendingJoins(){
   var out=[];
@@ -437,11 +437,15 @@ function renderCoach(){
   if(_ktab==='money')return renderMoney(el);
   if(_ktab==='req')return renderRequests(el);
   if(_ktab==='pay')return renderPayments(el);
+  if(_ktab==='post')return renderPostScreen(el);
   return renderSched(el);
 }
 
 /* Sessions tab — post a new session, then the upcoming list. The coach gives ONE
    window she is free; the backend cuts it into bookable one-hour slots. */
+function renderPostScreen(el){
+  el.innerHTML='<button class="linkbtn" style="margin:2px 0 12px" onclick="coachTab(\'sched\')">← Back to sessions</button>'+renderNewSession();
+}
 function renderNewSession(){
   var gn=(ME&&ME.coach_gcash_number)||'',gnm=(ME&&ME.coach_gcash_name)||'';
   var gcashBlock=gn
@@ -449,7 +453,7 @@ function renderNewSession(){
     : '<div class="note" style="margin:0 0 12px">Add the GCash number your players should pay to. You only do this once.</div>'+
       '<label class="lbl" for="nd-gc">GCash number</label><input class="field" id="nd-gc" placeholder="0917 123 4567" value="">'+
       '<label class="lbl" for="nd-gn">GCash account name</label><input class="field" id="nd-gn" placeholder="Leslie R." value="">';
-  return '<div class="sect">Post a session</div>'+
+  return '<div class="sect">New session</div>'+
     '<div class="card" style="padding:18px">'+
       '<label class="lbl" for="nd-date">Date</label><input class="field" type="date" id="nd-date">'+
       '<label class="lbl">What time are you free?</label>'+
@@ -484,6 +488,7 @@ function createDay(btn){
     notes:(document.getElementById('nd-note').value||'').trim()||null
   }).then(function(r){
     toast('Posted — '+(r.slots||0)+' one-hour slot'+(r.slots===1?'':'s')+' open for booking');
+    _ktab='sched';
     return reload();
   }).catch(function(e){btn.disabled=false;btn.textContent='Post this session';toast(e.message);});
 }
@@ -559,8 +564,9 @@ function rvLine(id,dec){
 function renderSched(el){
   var t=today();
   var up=DAYS.filter(function(d){return d.session_date>=t;});
-  if(!up.length){el.innerHTML=renderNewSession()+'<div class="sect">Upcoming</div><div class="empty">Nothing scheduled yet.</div>';return;}
-  el.innerHTML=renderNewSession()+'<div class="sect">Upcoming</div>'+up.map(function(d){
+  var postBtn='<button class="btn" style="margin-bottom:16px" onclick="coachTab(\'post\')">+ Post a session</button>';
+  if(!up.length){el.innerHTML=postBtn+'<div class="empty"><span class="big">No sessions yet</span>Post the hours you are free and players can start booking.</div>';return;}
+  el.innerHTML=postBtn+'<div class="sect">Upcoming</div>'+up.map(function(d){
     var rows=(d.blocks||[]).map(function(b){
       var names=[];(b.bookings||[]).forEach(function(bk){if(bk.status!=='active')return;(bk.participants||[]).forEach(function(p){names.push(esc(p.display_name));});});
       return '<div class="slot"><span class="slot-time">'+fmtTime(b.time_start)+' – '+fmtTime(b.time_end)+'</span>'+
