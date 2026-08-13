@@ -65,6 +65,10 @@ h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;margin:0;letter-sp
 .ai.good{background:#EAF5F1;color:#37705D;border:1px solid #CBE5DC}
 .ai.warn{background:#FDF0E4;color:#95562A;border:1px solid #F6DCC3}
 .ai.busy{background:#F3EDF8;color:#6B5085;border:1px solid #E4D8EE}
+.bar{height:5px;border-radius:99px;background:#E4D8EE;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:35%;border-radius:99px;background:var(--rose);animation:slide 1.15s ease-in-out infinite}
+@keyframes slide{0%{margin-left:-35%}100%{margin-left:100%}}
+@media (prefers-reduced-motion:reduce){.bar i{animation:none;width:100%;opacity:.5}}
 .gc-saved{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#FFF8FA;border:1px solid var(--line);border-radius:var(--rs);padding:12px 14px;margin-bottom:12px;font-size:13.5px}
 .mark{position:relative;z-index:2;font-family:'Fraunces',serif;font-weight:600;font-size:27px;letter-spacing:-.02em;color:var(--ink)}
 .mark em{font-style:italic;color:var(--rose)}
@@ -290,7 +294,7 @@ function boot(){
     document.getElementById('a-msg').textContent=e.message||'Please sign in.';
   });
 }
-function reload(){return api('days','GET').then(function(d){DAYS=d.days||[];ME=d.me||ME;if(ME.is_coach)renderCoach();else renderClient();});}
+function reload(){return api('days','GET').then(function(d){DAYS=d.days||[];ME=d.me||ME;if(ME.is_coach)renderCoach();else renderClient();pollIfChecking();});}
 
 /* ── Shared helpers over the day tree ─────────────────────────────────────────── */
 function seatsOf(b){var n=0;(b.bookings||[]).forEach(function(bk){if(bk.status!=='active')return;n+=(bk.participants||[]).length;});return n;}
@@ -377,8 +381,7 @@ function renderMine(el){
     var lines=set.map(function(r){
       var l=r.l,st=l.status;
       if(st==='approved')return '<div class="stat"><span>'+esc(r.p.display_name)+'</span><b>Paid ✓</b></div>';
-      if(st==='proof_uploaded')return '<div class="stat"><span>'+esc(r.p.display_name)+'</span><span style="color:var(--ink-soft)">Sent — waiting for coach</span></div>';
-      if(st==='rejected'&&false)return '';
+      if(st==='proof_uploaded')return '<div class="stat"><span>'+esc(r.p.display_name)+'</span><span style="color:var(--ink-soft)">'+(l.ai_status==='checking'?'Checking your receipt…':'Sent — waiting for coach')+'</span></div>';
       if(st==='credited')return '<div class="stat"><span>'+esc(r.p.display_name)+'</span><span style="color:var(--ink-soft)">Credited back</span></div>';
       if(st==='forfeited')return '<div class="stat"><span>'+esc(r.p.display_name)+'</span><span style="color:var(--rose-deep)">Forfeited</span></div>';
       if(st==='waived')return '';
@@ -487,8 +490,14 @@ function createDay(btn){
 
 function renderRequests(el){
   var js=pendingJoins();
-  if(!js.length){el.innerHTML='<div class="empty"><span class="big">Nothing to approve</span>When someone asks to join a slot that already has a player, it lands here.</div>';return;}
-  el.innerHTML=js.map(function(x){
+  var intro='<div class="note" style="margin-bottom:14px">Someone booking an hour that already has one player lands here first, so you can decide if the two are a good match before they pay. Nobody is charged until you approve. Requests expire on their own after 12 hours.</div>';
+  if(!js.length){el.innerHTML=intro+'<div class="empty"><span class="big">Nothing to approve</span>You will only see something here when a player asks to share an hour with someone already booked.</div>';return;}
+  el.innerHTML=intro+js.map(function(x){return _joinCard(x);}).join('');return;}
+function _unusedJoins(js,el){
+  return '';
+}
+function _joinCard(x){
+  {
     var who=(x.bk.participants||[]).map(function(p){return esc(p.display_name);}).join(' & ');
     var already=[];(x.b.bookings||[]).forEach(function(o){if(o.id===x.bk.id||o.status!=='active')return;(o.participants||[]).forEach(function(p){already.push(esc(p.display_name));});});
     return '<div class="card"><div style="padding:16px 18px">'+
@@ -497,7 +506,7 @@ function renderRequests(el){
       (already.length?'<div class="ai busy" style="margin-top:10px">Would play with '+already.join(', ')+'. Approve only if that is a good match.</div>':'')+
       '<div style="display:flex;gap:9px;margin-top:13px"><button class="btn sm" style="flex:1" onclick="rvJoin(\''+x.bk.id+'\',\'approve\')">Approve</button>'+
       '<button class="btn ghost sm" style="flex:1" onclick="rvJoin(\''+x.bk.id+'\',\'reject\')">Decline</button></div></div></div>';
-  }).join('');
+  }
 }
 
 function renderPayments(el){
@@ -505,9 +514,10 @@ function renderPayments(el){
   if(!ps.length){el.innerHTML='<div class="empty"><span class="big">All caught up</span>Receipts your players upload show up here for you to confirm.</div>';return;}
   el.innerHTML=ps.map(function(x){
     var l=x.l;
-    var ai=l.ai_status==='checking'?'<div class="ai busy">Checking the receipt…</div>'
+    var ai=l.ai_status==='checking'?'<div class="ai busy">Reading the receipt… this takes about 10 seconds.<div class="bar"><i></i></div></div>'
       :l.ai_status==='looks_good'?'<div class="ai good">'+esc(l.ai_notes||'Looks correct — your call to confirm')+'</div>'
-      :l.ai_status==='check_this'?'<div class="ai warn">'+esc(l.ai_notes||'Please check this one')+'</div>':'';
+      :l.ai_status==='check_this'?'<div class="ai warn">'+esc(l.ai_notes||'Please check this one')+'</div>'
+      :'<div class="ai busy">No automatic check yet. <button class="linkbtn" onclick="recheck(\''+l.id+'\')">Check this receipt</button></div>';
     return '<div class="card"><div style="padding:16px 18px">'+
       '<div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:Fraunces,serif;font-size:17px;font-weight:600">'+esc(x.p.display_name)+'</div>'+
       '<div style="font-family:Fraunces,serif;font-size:19px;color:var(--sage);font-weight:700">'+peso(l.amount)+'</div></div>'+
@@ -517,6 +527,24 @@ function renderPayments(el){
       '<div style="display:flex;gap:9px;margin-top:13px"><button class="btn sm" style="flex:1" onclick="rvLine(\''+l.id+'\',\'approve\')">I got it</button>'+
       '<button class="btn ghost sm" style="flex:1" onclick="rvLine(\''+l.id+'\',\'reject\')">Not received</button></div></div></div>';
   }).join('');
+}
+
+function recheck(lineId){
+  api('recheck-line','POST',{line_id:lineId}).then(function(){toast('Checking…');return reload();}).catch(function(e){toast(e.message);});
+}
+/* While any receipt is mid-check, refresh quietly every 4s (max ~1 min) so the result
+   appears on its own instead of the coach wondering whether it is stuck. */
+var _poll=null,_polls=0;
+function pollIfChecking(){
+  if(_poll){clearTimeout(_poll);_poll=null;}
+  var checking=false;
+  DAYS.forEach(function(d){(d.blocks||[]).forEach(function(b){(b.bookings||[]).forEach(function(bk){
+    (bk.participants||[]).forEach(function(p){(p.lines||[]).forEach(function(l){if(l.ai_status==='checking')checking=true;});});
+  });});});
+  if(!checking){_polls=0;return;}
+  if(_polls>=15){_polls=0;return;}
+  _polls++;
+  _poll=setTimeout(function(){reload();},4000);
 }
 
 function rvJoin(id,dec){
