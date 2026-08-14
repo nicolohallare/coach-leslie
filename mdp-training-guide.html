@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MDP Training — How it works</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* MDP club colours — navy + gold + pink, deliberately not the Coach Leslie palette. */
+:root{
+  --paper:#F7F4EE; --card:#fff; --ink:#1B2A38; --ink-soft:#6A7683;
+  --navy:#12212E; --gold:#C9A84C; --pink:#E0357A; --green:#2D6A4F;
+  --line:#E6DFD1; --shadow:0 2px 14px rgba(27,42,56,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:'Outfit',system-ui,sans-serif;font-size:16px;line-height:1.55}
+.wrap{max-width:560px;margin:0 auto;padding:0 20px 60px}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif;margin:0;font-weight:600;letter-spacing:-.01em}
+.top{background:var(--navy);color:#fff;padding:30px 20px 28px;text-align:center}
+.top h1{font-size:27px;color:#fff}
+.top h1 em{font-style:italic;color:var(--gold)}
+.top .sub{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-top:7px}
+.lede{font-size:17px;color:var(--ink-soft);text-align:center;margin:22px 0 26px}
+
+.who{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:30px}
+.who-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+.who-card b{font-family:'Fraunces',serif;font-size:16px;display:block;margin-bottom:3px}
+.who-card span{font-size:14.5px;color:var(--ink-soft)}
+
+.step{margin-bottom:32px}
+.step-hd{display:flex;align-items:center;margin-bottom:9px}
+.num{display:inline-flex;align-items:center;justify-content:center;width:29px;height:29px;border-radius:50%;background:var(--navy);color:#fff;font-weight:700;font-size:14.5px;margin-right:10px;flex-shrink:0}
+.step-hd h2{font-size:21px}
+.tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-left:8px}
+.t-app{background:#E7F1EC;color:var(--green)}
+.t-manual{background:#FDF0E4;color:#95562A}
+.step p{margin:0 0 11px}
+.step ul{margin:0 0 11px;padding-left:20px}
+.step li{margin-bottom:5px}
+.tip{background:#F1EEF9;border-radius:12px;padding:12px 14px;font-size:14.5px;color:#463C6B;margin:12px 0}
+.warn{background:#FFF6EC;border:1px solid #E9C99B;border-radius:12px;padding:12px 14px;font-size:14.5px;margin:12px 0}
+.money{background:var(--navy);color:#fff;border-radius:14px;padding:18px;margin:16px 0}
+.money h3{color:#fff;font-size:17px;margin-bottom:10px}
+.money-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.14);font-size:15px}
+.money-row:last-child{border-bottom:none}
+.money-row b{font-family:'Fraunces',serif;color:var(--gold)}
+.money .note{font-size:13px;color:rgba(255,255,255,.65);margin-top:10px;line-height:1.45}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:15px}
+td{padding:10px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{font-weight:600;padding-right:14px;white-space:nowrap}
+.end{text-align:center;padding:24px 20px;background:#fff;border:1px solid var(--line);border-radius:16px;margin-top:14px}
+.end h3{font-size:18px;margin-bottom:6px}
+.end p{font-size:14.5px;color:var(--ink-soft);margin:0}
+/* Phone mockups — MDP app is dark navy, so these render dark on the light page. */
+.phone{width:238px;margin:14px auto;border:9px solid #0A141C;border-radius:30px;background:#12212E;overflow:hidden;box-shadow:0 8px 26px rgba(18,33,46,.28)}
+.ph-top{background:#0E1B26;padding:10px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #22384A}
+.ph-brand{font-family:'Fraunces',serif;font-size:11px;color:#F2ECDF;font-weight:600}
+.ph-brand em{font-style:normal;color:var(--pink);display:block;font-size:8px;letter-spacing:.12em;text-transform:uppercase}
+.ph-chip{font-size:8px;color:#7BE3B0;border:1px solid rgba(123,227,176,.3);border-radius:999px;padding:3px 8px}
+.ph-body{padding:11px}
+.ph-tabs{display:flex;gap:3px;margin-bottom:9px;flex-wrap:wrap}
+.ph-tab{font-size:7.5px;font-weight:700;padding:5px 7px;border-radius:999px;background:#1B2E3E;color:#8FA3B4;white-space:nowrap}
+.ph-tab.on{background:var(--pink);color:#fff}
+.ph-card{background:#17293A;border:1px solid #23394B;border-radius:11px;margin-bottom:8px;overflow:hidden}
+.ph-hd{padding:9px 11px;border-bottom:1px solid #23394B}
+.ph-name{font-size:11.5px;color:#F2ECDF;font-weight:700}
+.ph-meta{font-size:8.5px;color:#8FA3B4;margin-top:2px}
+.ph-slot{display:flex;align-items:center;gap:6px;padding:8px 11px;border-top:1px solid #23394B;flex-wrap:wrap}
+.ph-time{font-size:10.5px;color:#F2ECDF;font-weight:700;flex:1}
+.ph-pill{font-size:7px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:999px}
+.pp-open{background:rgba(45,106,79,.25);color:#7BE3B0}
+.pp-some{background:rgba(201,168,76,.2);color:var(--gold)}
+.pp-full{background:rgba(224,53,122,.2);color:#FF7FB0}
+.ph-lbl{font-size:7.5px;color:#8FA3B4;margin:0 0 3px 1px;text-transform:uppercase;letter-spacing:.08em}
+.ph-field{border:1px solid #2B4459;border-radius:7px;padding:7px 8px;font-size:9px;color:#C6D4E0;background:#0F1D28;margin-bottom:6px}
+.ph-btn{background:var(--pink);color:#fff;border-radius:999px;font-size:9px;font-weight:700;padding:8px 12px;text-align:center;display:block;margin-top:6px}
+.ph-btn.gr{background:#2D6A4F}
+.ph-who{font-size:9px;color:#C6D4E0;padding:0 11px 9px}
+.ph-pay{background:rgba(201,168,76,.1);border:1px dashed rgba(201,168,76,.45);border-radius:9px;padding:9px;margin:0 11px 10px;font-size:9px;color:#E4D9C0;line-height:1.45}
+.cap{text-align:center;font-size:13px;color:var(--ink-soft);font-style:italic;margin:-2px 0 6px}
+@media print{body{background:#fff}.step,.money,.who-card,.phone{break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>MDP <em>Training</em></h1>
+  <div class="sub">How it works · test run</div>
+</div>
+
+<div class="wrap">
+  <p class="lede">Club-hosted training sessions with Coach Leslie, booked and paid through the app.</p>
+
+  <h2 style="font-size:19px;margin-bottom:12px">Who does what</h2>
+  <div class="who">
+    <div class="who-card"><b>Nicolo or Meg</b><span>Books the court at the venue, then posts the training day in the MDP app (Admin → 🎓 Training).</span></div>
+    <div class="who-card"><b>Coach Leslie</b><span>Approves who shares an hour, and confirms the coaching fees paid to her.</span></div>
+    <div class="who-card"><b>Meg</b><span>Confirms the court and ball boy payments made to the club.</span></div>
+    <div class="who-card"><b>Players</b><span>Book an hour and pay.</span></div>
+  </div>
+
+  <div class="warn"><b>This is a test run.</b> Only Nicolo and Leslie can book right now — members don't see training yet. We're checking the flow works before opening it to the club.</div>
+
+  <!-- 1 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">1</span><h2>Book the court<span class="tag t-manual">Outside the app</span></h2></div>
+    <p>Before anything is posted, the court has to actually be reserved at the venue, and the ball boy arranged. The app doesn't do this — posting a day in the app does <b>not</b> book a court.</p>
+    <div class="tip">Leslie tells Meg which hours she's free → Meg confirms the court at Vantage → only then is the day posted.</div>
+  </div>
+
+  <!-- 2 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">2</span><h2>Post the training day<span class="tag t-app">In the app</span></h2></div>
+    <p>In the MDP app: <b>Admin → 🎓 Training → New training day</b></p>
+    <ul>
+      <li><b>Date</b></li>
+      <li><b>Coach is free from → to</b> — e.g. 5:00 PM to 9:00 PM. This becomes four one-hour slots automatically.</li>
+      <li><b>Coach GCash</b> — Leslie's number and name</li>
+      <li><b>Court rate/hr</b> — leave blank for ₱700, or type a different rate for that day</li>
+      <li><b>Notes</b> — optional</li>
+    </ul>
+<div class="phone"><div class="ph-top"><div class="ph-brand">MATCH DAY PICKLE!<em>Open Play</em></div><div class="ph-chip">ADMIN</div></div><div class="ph-body"><div class="ph-tabs"><span class="ph-tab">Payments</span><span class="ph-tab">Sessions</span><span class="ph-tab on">🎓 Training</span></div><div class="ph-card" style="padding:10px"><div class="ph-lbl">New training day</div><div class="ph-lbl">Date</div><div class="ph-field">2026-08-16</div><div class="ph-lbl">Coach is free from → to</div><div style="display:flex;gap:5px"><div class="ph-field" style="flex:1;margin:0">17:00</div><div class="ph-field" style="flex:1;margin:0">21:00</div></div><div style="height:6px"></div><div class="ph-field">Coach GCash number</div><div class="ph-field">Court rate/hr (blank = ₱700)</div><div class="ph-btn gr">Create training day</div><div style="font-size:7.5px;color:#8FA3B4;margin-top:7px;line-height:1.45">Only the coach fee is billed through the app right now. Court and ball boy shares are still collected manually.</div></div></div></div>
+    <p class="cap">Admin → 🎓 Training. A 5–9 PM window becomes four bookable hours.</p>
+  </div>
+
+  <!-- 3 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">3</span><h2>Players book<span class="tag t-app">In the app</span></h2></div>
+    <p>In the <b>🎓 Training</b> tab, players pick an hour and book — alone, with another member, or with a guest.</p>
+    <p>If someone books an hour that already has one player in it, the booking waits for <b>Leslie's approval</b> so she can check the two are a good match. Nobody pays until she approves.</p>
+<div class="phone"><div class="ph-top"><div class="ph-brand">MATCH DAY PICKLE!<em>Open Play</em></div><div class="ph-chip">TRAINING</div></div><div class="ph-body"><div class="ph-card"><div class="ph-hd"><div class="ph-name">🎓 2026-08-16 — Vantage, Marikina</div><div class="ph-meta">Court ₱700/hr · Ball boy ₱250/hr · Coach ₱1,500/head</div></div><div class="ph-slot"><span class="ph-time">⏰ 5 PM–6 PM</span><span class="ph-pill pp-full">🔒 Full</span></div><div class="ph-who">✓ Nicolo Hallare · ⏳ Bel Mjx</div><div class="ph-slot"><span class="ph-time">⏰ 6 PM–7 PM</span><span class="ph-pill pp-some">🟡 1 left</span><span class="ph-btn" style="margin:0;padding:5px 11px">Book</span></div><div class="ph-slot"><span class="ph-time">⏰ 7 PM–8 PM</span><span class="ph-pill pp-open">🟢 Open</span><span class="ph-btn" style="margin:0;padding:5px 11px">Book</span></div></div><div class="ph-card" style="padding:10px"><div class="ph-lbl">Booking 7 PM–8 PM</div><div class="ph-field">Solo (just me)</div><div class="ph-btn gr" style="margin-top:2px">Confirm booking</div></div></div></div>
+    <p class="cap">The Training tab. Each hour books separately.</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">4</span><h2>Paying<span class="tag t-app">Coach fee</span><span class="tag t-manual">Court + ball boy</span></h2></div>
+    <div class="money">
+      <h3>One hour of training</h3>
+      <div class="money-row"><span>Coaching fee (each player)</span><b>₱1,500</b></div>
+      <div class="money-row"><span>Court</span><b>₱700</b></div>
+      <div class="money-row"><span>Ball boy</span><b>₱250</b></div>
+      <div class="money-row"><span>Playing alone</span><b>₱2,450</b></div>
+      <div class="money-row"><span>Two sharing the hour</span><b>₱1,975 each</b></div>
+      <div class="note">Court and ball boy are split between whoever is in that hour. Book alone and someone joins later — the difference comes back to you.</div>
+    </div>
+    <table>
+      <tr><td>Coach fee</td><td>Paid to <b>Leslie</b> through the app. Upload the GCash receipt, she confirms it.</td></tr>
+      <tr><td>Court + ball boy</td><td>Paid to <b>Meg</b>. <b>Collected manually for now</b> — this part isn't in the app yet.</td></tr>
+    </table>
+    <div class="warn"><b>For this test:</b> the app will only ask for the ₱1,500 coach fee. Meg collects the ₱950 court and ball boy the usual way, same as open play. The automatic version is being built.</div>
+<div class="phone"><div class="ph-top"><div class="ph-brand">MATCH DAY PICKLE!<em>Open Play</em></div><div class="ph-chip">TRAINING</div></div><div class="ph-body"><div class="ph-card"><div class="ph-hd"><div class="ph-name">⏰ 7 PM–8 PM</div><div class="ph-meta">Booked · waiting for payment</div></div><div class="ph-pay" style="margin-top:10px">💰 Coach fee <b>₱1,500</b> for <b>Nicolo Hallare</b><br>→ GCash <b>0977 272 6075</b> (Leslie R.)<div class="ph-btn" style="margin-top:7px">📸 Upload payment proof</div></div></div></div></div>
+    <p class="cap">Only the coach fee appears — court and ball boy are collected off-app for now.</p>
+  </div>
+
+  <!-- 5 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">5</span><h2>Confirming payments<span class="tag t-app">In the app</span></h2></div>
+    <p><b>Leslie</b> confirms the coaching fees in her own app (Payments tab). <b>Meg</b> confirms the court and ball boy — for now that's just her own record-keeping, since those aren't in the app yet.</p>
+    <p>The app reads each receipt and gives a suggestion — green if everything matches, amber if something looks off. It's only advice. Always check your own GCash before confirming.</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">6</span><h2>Cancellations</h2></div>
+    <table>
+      <tr><td>Coaching fee</td><td>More than <b>12 hours</b> before = full credit. Less than 12 hours = forfeited.</td></tr>
+      <tr><td>Court fee</td><td>More than <b>48 hours</b> before = full credit. Less than 48 hours = forfeited.</td></tr>
+      <tr><td>Leslie cancels</td><td>Everyone gets everything back as credit, whatever the timing.</td></tr>
+    </table>
+    <p><b>12 hours before the session the list is final</b> — no joining or dropping after that. It's the same moment cancellations close.</p>
+    <p>If your partner drops out more than 48 hours before, you're alone in that hour again and cover the court yourself (₱475 more). If they drop out closer than that, their forfeited payment covers it and you owe nothing.</p>
+  </div>
+
+  <!-- 7 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">7</span><h2>Credits and refunds</h2></div>
+    <ul>
+      <li>Credits go to the player's wallet and <b>never expire</b>.</li>
+      <li>No automatic cash refunds. If someone wants cash, an admin pays them and records it with the <b>💸 Cash out</b> button in Admin → Financials.</li>
+      <li>Coaching credits are used with Leslie. Club credits (court, ball boy) are used with the club. They stay separate.</li>
+      <li>Wallet balance can pay for court and ball boy. The coaching fee always goes straight to Leslie.</li>
+    </ul>
+  </div>
+
+  <!-- 8 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">8</span><h2>What we're testing</h2></div>
+    <p>Please tell Nicolo if any of these feel wrong:</p>
+    <ul>
+      <li>Is one hour per booking right, or do people want two?</li>
+      <li>Is the approval step useful, or just slow?</li>
+      <li>Are the receipt suggestions accurate?</li>
+      <li>Is 12 hours the right cutoff?</li>
+      <li>Anything confusing on screen</li>
+    </ul>
+  </div>
+
+  <div class="end">
+    <h3>Questions?</h3>
+    <p>Message Nicolo. Everything is logged and anything done by mistake can be undone.</p>
+  </div>
+</div>
+
+</body>
+</html>

@@ -362,11 +362,11 @@ function confirmBook(id,btn){
   }).catch(function(e){btn.disabled=false;btn.textContent='Confirm booking';toast(e.message);});
 }
 function cancelBk(id){
-  if(!confirm('Cancel this booking?\n\nMore than 24 hours before the session, your coach fee comes back as credit. Under 24 hours, the coach fee is forfeited.'))return;
+  if(!confirm('Cancel this booking?\n\nMore than 12 hours before the session, your coach fee comes back as credit. Under 12 hours, the coach fee is forfeited.'))return;
   api('cancel-booking','POST',{booking_id:id}).then(function(r){
     var m='Booking cancelled';
     if(r&&r.credited)m+=' — '+peso(r.credited)+' credited to you';
-    if(r&&r.forfeited)m+=' — '+peso(r.forfeited)+' forfeited (under 24h)';
+    if(r&&r.forfeited)m+=' — '+peso(r.forfeited)+' forfeited (under 12h)';
     toast(m);return reload();
   }).catch(function(e){toast(e.message);});
 }

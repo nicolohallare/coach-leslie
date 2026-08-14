@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF4F6">
+<title>Coach Leslie — How to use your app</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="17" fill="%23D8547F"/><ellipse cx="27.5" cy="25" rx="12.5" ry="14.5" fill="%23FFF1F5"/><path d="M27.5 39.5 L27.5 49 Q27.5 51.5 30 51.5 L44 51.5" stroke="%23FFF1F5" stroke-width="5.4" stroke-linecap="round" fill="none"/><circle cx="45.5" cy="18.5" r="6" fill="%23F2A97E"/></svg>'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Same palette as the app so the guide feels like part of it. */
+:root{
+  --paper:#FBF4F6; --card:#fff; --ink:#3B2233; --ink-soft:#8A6E7F;
+  --rose:#D8547F; --rose-deep:#B23C64; --rose-wash:#FBE7EE;
+  --apricot:#F2A97E; --sage:#7BAE9A; --line:#F0DDE4;
+  --shadow:0 2px 14px rgba(178,60,100,.09);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:'Outfit',system-ui,sans-serif;font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
+.wrap{max-width:540px;margin:0 auto;padding:0 20px 60px}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif;margin:0;letter-spacing:-.01em;font-weight:600}
+
+/* Header — same arc motif as the app */
+.top{position:relative;text-align:center;padding:32px 20px 30px;overflow:hidden;background:linear-gradient(168deg,#FDEFF3 0%,#FBF4F6 72%)}
+.top::after{content:'';position:absolute;left:-12%;right:-12%;bottom:-46px;height:92px;border-radius:50%;background:var(--paper)}
+.logo{position:relative;z-index:2;width:64px;height:64px;margin:0 auto 12px;display:block;border-radius:18px;box-shadow:0 5px 18px rgba(178,60,100,.26)}
+.top h1{position:relative;z-index:2;font-size:29px}
+.top h1 em{font-style:italic;color:var(--rose)}
+.top .sub{position:relative;z-index:2;font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);margin-top:6px}
+
+.lede{font-size:17px;color:var(--ink-soft);text-align:center;margin:6px 0 28px}
+.link{display:block;text-align:center;background:var(--rose);color:#fff;text-decoration:none;font-weight:600;padding:15px;border-radius:999px;margin-bottom:34px;font-size:16px}
+
+/* Steps */
+.step{margin-bottom:38px}
+.num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--rose);color:#fff;font-weight:700;font-size:15px;margin-right:10px;flex-shrink:0}
+.step-hd{display:flex;align-items:center;margin-bottom:10px}
+.step-hd h2{font-size:22px}
+.step p{margin:0 0 12px}
+.tip{background:#F3EDF8;border-radius:12px;padding:12px 14px;font-size:14.5px;color:#5E4470;margin:12px 0}
+.warn{background:#FFF8F2;border:1px solid var(--apricot);border-radius:12px;padding:12px 14px;font-size:14.5px;margin:12px 0}
+
+/* Phone mockup */
+.phone{width:264px;margin:16px auto;border:9px solid #2A1520;border-radius:30px;background:var(--paper);overflow:hidden;box-shadow:0 8px 28px rgba(59,34,51,.2)}
+.ph-top{background:linear-gradient(168deg,#FDEFF3,#FBF4F6);padding:13px 12px 11px;text-align:center}
+.ph-logo{width:26px;height:26px;border-radius:8px;display:block;margin:0 auto 5px}
+.ph-name{font-family:'Fraunces',serif;font-size:14px;font-weight:600}
+.ph-name em{font-style:italic;color:var(--rose)}
+.ph-body{padding:11px 11px 14px}
+.ph-tabs{display:flex;gap:4px;margin-bottom:9px}
+.ph-tab{flex:1;text-align:center;font-size:8.5px;font-weight:600;padding:6px 2px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink-soft)}
+.ph-tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ph-card{background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);margin-bottom:8px;overflow:hidden}
+.ph-hd{padding:10px 11px 8px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#FFF8FA,#fff)}
+.ph-date{font-family:'Fraunces',serif;font-size:13px;font-weight:600}
+.ph-meta{font-size:9.5px;color:var(--ink-soft);margin-top:2px}
+.ph-slot{display:flex;align-items:center;gap:6px;padding:9px 11px;border-top:1px solid var(--line);flex-wrap:wrap}
+.ph-slot:first-child{border-top:none}
+.ph-time{font-family:'Fraunces',serif;font-size:11.5px;font-weight:600;flex:1}
+.ph-pill{font-size:7.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
+.p-open{background:#E9F4F0;color:#3F7D68}
+.p-some{background:#FDF0E4;color:#B5713C}
+.p-full{background:var(--rose-wash);color:var(--rose-deep)}
+.ph-btn{background:var(--rose);color:#fff;border-radius:999px;font-size:9px;font-weight:600;padding:6px 11px;display:inline-block}
+.ph-btn.ghost{background:#fff;color:var(--rose-deep);border:1px solid var(--line)}
+.ph-btn.wide{display:block;text-align:center;padding:9px;font-size:10.5px;margin-top:7px}
+.ph-field{border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:10px;color:var(--ink-soft);background:#fff;margin-bottom:6px}
+.ph-lbl{font-size:8.5px;font-weight:600;color:var(--ink-soft);margin:0 0 3px 2px}
+.ph-note{background:#EAF5F1;color:#37705D;border:1px solid #CBE5DC;border-radius:9px;padding:8px 9px;font-size:9px;margin-top:7px;line-height:1.4}
+.ph-note.amber{background:#FDF0E4;color:#95562A;border-color:#F6DCC3}
+.ph-row{display:flex;justify-content:space-between;padding:8px 11px;border-bottom:1px solid var(--line);font-size:10.5px}
+.ph-row b{font-family:'Fraunces',serif;color:var(--sage);font-size:11.5px}
+.ph-total{background:var(--rose);color:#fff;border-radius:13px;padding:13px;text-align:center;margin-bottom:8px}
+.ph-total .n{font-family:'Fraunces',serif;font-size:23px;font-weight:700;display:block;line-height:1.1}
+.ph-total .l{font-size:8px;letter-spacing:.14em;text-transform:uppercase;opacity:.9}
+.cap{text-align:center;font-size:13px;color:var(--ink-soft);font-style:italic;margin:-4px 0 4px}
+
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:15px}
+td{padding:10px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{font-weight:600;padding-right:14px;white-space:nowrap}
+.end{text-align:center;padding:26px 20px;background:#fff;border:1px solid var(--line);border-radius:16px;margin-top:10px}
+.end h3{font-size:19px;margin-bottom:6px}
+.end p{font-size:14.5px;color:var(--ink-soft);margin:0}
+@media print{
+  body{background:#fff}
+  .step{break-inside:avoid}
+  .phone{break-inside:avoid;box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <svg class="logo" viewBox="0 0 64 64" aria-label="Coach Leslie">
+    <rect width="64" height="64" rx="17" fill="#D8547F"/>
+    <ellipse cx="27.5" cy="25" rx="12.5" ry="14.5" fill="#FFF1F5"/>
+    <path d="M27.5 39.5 L27.5 49 Q27.5 51.5 30 51.5 L44 51.5" stroke="#FFF1F5" stroke-width="5.4" stroke-linecap="round" fill="none"/>
+    <circle cx="45.5" cy="18.5" r="6" fill="#F2A97E"/>
+  </svg>
+  <h1>How to use <em>your app</em></h1>
+  <div class="sub">A quick walkthrough</div>
+</div>
+
+<div class="wrap">
+  <p class="lede">Players pick an hour, pay you by GCash, and you confirm it. That's the whole thing.</p>
+  <a class="link" href="https://coachleslie.netlify.app">coachleslie.netlify.app</a>
+
+  <!-- 1 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">1</span><h2>Make your account</h2></div>
+    <p>Open the link, tap <b>New here</b>, and enter your name, your email, and a password you'll remember.</p>
+    <div class="phone">
+      <div class="ph-top">
+        <svg class="ph-logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="17" fill="#D8547F"/><ellipse cx="27.5" cy="25" rx="12.5" ry="14.5" fill="#FFF1F5"/><path d="M27.5 39.5 L27.5 49 Q27.5 51.5 30 51.5 L44 51.5" stroke="#FFF1F5" stroke-width="5.4" stroke-linecap="round" fill="none"/><circle cx="45.5" cy="18.5" r="6" fill="#F2A97E"/></svg>
+        <div class="ph-name">Coach <em>Leslie</em></div>
+      </div>
+      <div class="ph-body">
+        <div class="ph-card" style="padding:11px">
+          <div style="font-family:Fraunces,serif;font-size:14px;font-weight:600;margin-bottom:8px">Book your session</div>
+          <div class="ph-tabs"><div class="ph-tab">Sign in</div><div class="ph-tab on">New here</div></div>
+          <div class="ph-lbl">Your name</div><div class="ph-field">Leslie Rossi</div>
+          <div class="ph-lbl">Email</div><div class="ph-field">leslierossi65@gmail.com</div>
+          <div class="ph-lbl">Password</div><div class="ph-field">••••••••</div>
+          <div class="ph-btn wide">Create account</div>
+        </div>
+      </div>
+    </div>
+    <p class="cap">No confirmation email — you go straight in.</p>
+    <div class="tip"><b>Do this too:</b> tap your browser's Share button → <b>Add to Home Screen</b>. The app gets a pink icon on your phone, just like any other app.</div>
+  </div>
+
+  <!-- 2 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">2</span><h2>Post your first session</h2></div>
+    <p>Tap <b>+ Post a session</b>, pick the date, and set the hours you're free.</p>
+    <div class="phone">
+      <div class="ph-top">
+        <svg class="ph-logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="17" fill="#D8547F"/><ellipse cx="27.5" cy="25" rx="12.5" ry="14.5" fill="#FFF1F5"/><path d="M27.5 39.5 L27.5 49 Q27.5 51.5 30 51.5 L44 51.5" stroke="#FFF1F5" stroke-width="5.4" stroke-linecap="round" fill="none"/><circle cx="45.5" cy="18.5" r="6" fill="#F2A97E"/></svg>
+        <div class="ph-name">Coach <em>Leslie</em></div>
+      </div>
+      <div class="ph-body">
+        <div style="font-size:9px;color:var(--ink-soft);margin-bottom:8px">← Back to sessions</div>
+        <div class="ph-card" style="padding:11px">
+          <div class="ph-lbl">Date</div><div class="ph-field">Saturday, Aug 16</div>
+          <div class="ph-lbl">What time are you free?</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div class="ph-field" style="flex:1;margin:0">5:00 PM</div>
+            <span style="font-size:9px;color:var(--ink-soft)">to</span>
+            <div class="ph-field" style="flex:1;margin:0">9:00 PM</div>
+          </div>
+          <div style="font-size:8.5px;color:var(--ink-soft);margin:7px 2px 9px;line-height:1.4">Players book by the hour. A 5 PM–9 PM window becomes four one-hour slots.</div>
+          <div class="ph-lbl">GCash number</div><div class="ph-field">0977 272 6075</div>
+          <div class="ph-btn wide">Post this session</div>
+        </div>
+      </div>
+    </div>
+    <p class="cap">5–9 PM becomes four bookable hours automatically.</p>
+    <div class="tip">You enter your <b>GCash number only once</b>. Every session after that fills it in for you.</div>
+  </div>
+
+  <!-- 3 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">3</span><h2>Share your link</h2></div>
+    <p>Send players the same link: <b>coachleslie.netlify.app</b></p>
+    <p>They sign up, see your open hours, and book. Each player pays <b>₱1,500</b>. They can come alone or bring a partner — if two share an hour, both pay ₱1,500 each.</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">4</span><h2>Your four tabs</h2></div>
+    <div class="phone">
+      <div class="ph-top">
+        <svg class="ph-logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="17" fill="#D8547F"/><ellipse cx="27.5" cy="25" rx="12.5" ry="14.5" fill="#FFF1F5"/><path d="M27.5 39.5 L27.5 49 Q27.5 51.5 30 51.5 L44 51.5" stroke="#FFF1F5" stroke-width="5.4" stroke-linecap="round" fill="none"/><circle cx="45.5" cy="18.5" r="6" fill="#F2A97E"/></svg>
+        <div class="ph-name">Coach <em>Leslie</em></div>
+      </div>
+      <div class="ph-body">
+        <div class="ph-tabs">
+          <div class="ph-tab on">Sessions</div><div class="ph-tab">Requests</div><div class="ph-tab">Payments (1)</div><div class="ph-tab">Earnings</div>
+        </div>
+        <div class="ph-btn wide" style="margin:0 0 8px">+ Post a session</div>
+        <div class="ph-card">
+          <div class="ph-hd"><div class="ph-date">Saturday, Aug 16</div><div class="ph-meta">Vantage, Marikina · ₱1,500 per player</div></div>
+          <div class="ph-slot"><span class="ph-time">5 – 6 PM</span><span class="ph-pill p-full">Full</span></div>
+          <div class="ph-slot"><span class="ph-time">6 – 7 PM</span><span class="ph-pill p-some">1 spot left</span></div>
+          <div class="ph-slot"><span class="ph-time">7 – 8 PM</span><span class="ph-pill p-open">Open</span></div>
+          <div class="ph-slot"><span class="ph-time">8 – 9 PM</span><span class="ph-pill p-open">Open</span></div>
+        </div>
+      </div>
+    </div>
+    <table>
+      <tr><td>Sessions</td><td>Post new sessions and see what's coming up, with who's booked.</td></tr>
+      <tr><td>Requests</td><td>Someone wants to join an hour that already has a player — you decide if they're a good match.</td></tr>
+      <tr><td>Payments</td><td>Receipts waiting for you to confirm.</td></tr>
+      <tr><td>Earnings</td><td>Your confirmed total, by date.</td></tr>
+    </table>
+  </div>
+
+  <!-- 5 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">5</span><h2>Confirming payments</h2></div>
+    <p>When a player sends your fee, their receipt appears here. Tap <b>View receipt</b> to see the screenshot.</p>
+    <div class="phone">
+      <div class="ph-body" style="padding-top:14px">
+        <div class="ph-tabs"><div class="ph-tab">Sessions</div><div class="ph-tab">Requests</div><div class="ph-tab on">Payments</div><div class="ph-tab">Earnings</div></div>
+        <div class="ph-card" style="padding:11px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-family:Fraunces,serif;font-size:13px;font-weight:600">Maria Santos</span>
+            <span style="font-family:Fraunces,serif;font-size:14px;color:var(--sage);font-weight:700">₱1,500</span>
+          </div>
+          <div class="ph-meta">Saturday, Aug 16 · 5 PM · Ref 7043838820471</div>
+          <div style="font-size:9.5px;color:var(--rose-deep);font-weight:600;margin-top:6px">View receipt</div>
+          <div class="ph-note">✓ Looks correct — your call to confirm<br><br>Checks out:<br>• Amount: PHP 1,500<br>• Sent to your number</div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <div class="ph-btn" style="flex:1;text-align:center">I got it</div>
+            <div class="ph-btn ghost" style="flex:1;text-align:center">Not received</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="cap">Green means everything matched. Amber means something looks off.</p>
+    <div class="warn"><b>Always check your own GCash first.</b> The app's note is only a suggestion — you have the final say. Tap <b>I got it</b> once you see the money in your account.</div>
+  </div>
+
+  <!-- 6 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">6</span><h2>Watching your earnings</h2></div>
+    <div class="phone">
+      <div class="ph-body" style="padding-top:14px">
+        <div class="ph-tabs"><div class="ph-tab">Sessions</div><div class="ph-tab">Requests</div><div class="ph-tab">Payments</div><div class="ph-tab on">Earnings</div></div>
+        <div class="ph-total"><span class="n">₱7,500</span><span class="l">Confirmed received</span></div>
+        <div class="ph-card">
+          <div class="ph-row"><span>Saturday, Aug 16</span><span><b>₱4,500</b></span></div>
+          <div class="ph-row"><span>Thursday, Aug 14</span><span><b>₱3,000</b></span></div>
+        </div>
+      </div>
+    </div>
+    <p class="cap">Only payments you've confirmed are counted.</p>
+  </div>
+
+  <!-- 7 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">7</span><h2>If someone cancels</h2></div>
+    <p>The app handles this for you:</p>
+    <table>
+      <tr><td>More than 12 hours before</td><td>They get their ₱1,500 back as credit for a future session.</td></tr>
+      <tr><td>Less than 12 hours before</td><td>The fee is forfeited and stays with you.</td></tr>
+    </table>
+    <p>Credits never expire, and there are no automatic cash refunds.</p>
+  </div>
+
+  <!-- 8 -->
+  <div class="step">
+    <div class="step-hd"><span class="num">8</span><h2>Good to know</h2></div>
+    <table>
+      <tr><td>Guests</td><td>Welcome — the player who invites them covers their fee.</td></tr>
+      <tr><td>12-hour cutoff</td><td>Twelve hours before a session the list is final — this is the same moment cancellations close.</td></tr>
+      <tr><td>You cancel</td><td>Message your players — everyone gets full credit.</td></tr>
+      <tr><td>MDP days</td><td>Match Day Pickle sessions will also show in your Sessions tab, marked <i>Match Day Pickle</i>. Still being set up — ignore them for now.</td></tr>
+    </table>
+  </div>
+
+  <div class="end">
+    <h3>Something wrong?</h3>
+    <p>Message Nicolo. Everything is logged — even a mistaken "I got it" can be undone.</p>
+  </div>
+</div>
+
+</body>
+</html>
