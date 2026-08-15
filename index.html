@@ -417,8 +417,13 @@ function pendingJoins(){
 }
 function pendingPays(){
   var out=[];
+  // COACH FEES ONLY. Since 2026-08-15 MDP training days also raise a 'club' payment line
+  // for the court + ball boy share, which players send to Meg at the club — not to the
+  // coach. Those receipts must never appear here: confirming one would mark money as
+  // received that never reached this account.
   DAYS.forEach(function(d){(d.blocks||[]).forEach(function(b){(b.bookings||[]).forEach(function(bk){
     (bk.participants||[]).forEach(function(p){(p.lines||[]).forEach(function(l){
+      if(l.component!=='coach')return;
       if(l.status==='proof_uploaded')out.push({l:l,p:p,b:b,d:d});
     });});
   });});});
@@ -577,8 +582,12 @@ function renderSched(el){
 }
 function renderMoney(el){
   var byDate={},dates=[],paid=0,waiting=0;
+  // COACH FEES ONLY — MDP days also carry a 'club' line for the court + ball boy share,
+  // which is money sent to the club, not earnings. Counting it here would overstate her
+  // income by roughly ₱475–950 per MDP player.
   DAYS.forEach(function(d){(d.blocks||[]).forEach(function(b){(b.bookings||[]).forEach(function(bk){
     (bk.participants||[]).forEach(function(p){(p.lines||[]).forEach(function(l){
+      if(l.component!=='coach')return;
       var a=Number(l.amount||0);
       if(!byDate[d.session_date]){byDate[d.session_date]={p:0,w:0};dates.push(d.session_date);}
       if(l.status==='approved'){byDate[d.session_date].p+=a;paid+=a;}
