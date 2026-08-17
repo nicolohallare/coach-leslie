@@ -195,6 +195,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);mar
       <button class="tab" id="kt-req" onclick="coachTab('req')">Requests</button>
       <button class="tab" id="kt-pay" onclick="coachTab('pay')">Payments</button>
       <button class="tab" id="kt-money" onclick="coachTab('money')">Earnings</button>
+      <button class="tab" id="kt-credit" onclick="coachTab('credit')">Credits</button>
     </div>
     <div id="coach-body"><div class="load">Loading…</div></div>
   </div>
@@ -361,6 +362,17 @@ function confirmBook(id,btn){
     return reload();
   }).catch(function(e){btn.disabled=false;btn.textContent='Confirm booking';toast(e.message);});
 }
+function removeBk(id,who){
+  // Coach-initiated removal: always credits the player back in full, unlike a player
+  // cancelling on themselves (which follows the 12h / 48h rules).
+  if(!confirm('Remove '+(who||'this player')+' from the slot?\n\nThey get everything back as credit, whatever the timing. Let them know so they can rebook.'))return;
+  sb.rpc('coach_remove_booking',{p_booking:id,p_reason:null}).then(function(r){
+    if(r.error)throw new Error(r.error.message);
+    var c=(r.data&&r.data.credited)||0;
+    toast(c?'Removed — '+peso(c)+' credited back':'Removed');
+    return reload();
+  }).catch(function(e){toast(e.message||'Could not remove');});
+}
 function cancelBk(id){
   if(!confirm('Cancel this booking?\n\nMore than 12 hours before the session, your coach fee comes back as credit. Under 12 hours, the coach fee is forfeited.'))return;
   api('cancel-booking','POST',{booking_id:id}).then(function(r){
@@ -406,7 +418,7 @@ function sendProof(input,lineId){
 }
 
 /* ── Coach ────────────────────────────────────────────────────────────────────── */
-function coachTab(t){_ktab=t;['sched','req','pay','money'].forEach(function(k){var el=document.getElementById('kt-'+k);if(el)el.classList.toggle('on',k===t||(t==='post'&&k==='sched'));});renderCoach();}
+function coachTab(t){_ktab=t;['sched','req','pay','money','credit'].forEach(function(k){var el=document.getElementById('kt-'+k);if(el)el.classList.toggle('on',k===t||(t==='post'&&k==='sched'));});renderCoach();}
 
 function pendingJoins(){
   var out=[];
@@ -436,10 +448,65 @@ function badgeTabs(){
   if(py)py.textContent='Payments'+(p?' ('+p+')':'');
 }
 
+// Cancel a whole session — storm, injury, venue closed. Everyone who paid gets it all
+// back as credit whatever the timing, because the cancellation is the coach's decision,
+// not theirs. The ordinary 12-hour forfeit rule only applies when a PLAYER pulls out.
+// A player who pays cash on the court, or by GCash without bothering to upload anything.
+// Recorded against the payment line with her name and the time, so the money is accounted
+// for and she is not left chasing someone who has already settled up.
+function markPaidHere(lineId,name){
+  var how=prompt('How did '+name+' pay you?\n\nThis marks the coaching fee as settled.','Cash at the session');
+  if(how===null)return;
+  sb.rpc('training_line_admin_fix',{p_line:lineId,p_action:'settled_elsewhere',p_note:(how.trim()||'Paid in person')})
+    .then(function(r){
+      if(r.error)throw new Error(r.error.message);
+      toast(name+' marked as paid');
+      return reload();
+    }).catch(function(e){toast(e.message||'Could not update');});
+}
+
+function cancelDay(dayId,label){
+  if(!confirm('Cancel '+label+' completely?\n\nEveryone booked is cancelled and anyone who already paid gets their full fee back as credit — no matter how close to the session it is.\n\nThis cannot be undone.'))return;
+  var reason=prompt('Reason to show players (optional):','Storm');
+  if(reason===null)return;
+  sb.rpc('training_day_cancel',{p_day:dayId,p_reason:reason.trim()||null}).then(function(r){
+    if(r.error)throw new Error(r.error.message);
+    var d=r.data||{};
+    toast('Session cancelled — ₱'+Math.round(Number(d.coach_credited||0)).toLocaleString()+' returned as credit');
+    return reload();
+  }).catch(function(e){toast(e.message||'Could not cancel');});
+}
+
+// Coaching credit the players are holding. Without this the money we hand back is
+// invisible to her — she would have no idea who is owed a session.
+function renderCredits(el){
+  el.innerHTML='<div class="sect">Credit owed to players</div><div class="empty">Loading…</div>';
+  sb.rpc('coach_credit_summary').then(function(r){
+    var rows=(r.data||[]).filter(function(x){return Number(x.credit_balance)>0;});
+    if(!rows.length){
+      el.innerHTML='<div class="sect">Credit owed to players</div>'+
+        '<div class="empty"><span class="big">Nobody is owed anything</span>When you cancel a session, what players already paid shows up here until they use it.</div>';
+      return;
+    }
+    var total=rows.reduce(function(s,x){return s+Number(x.credit_balance);},0);
+    el.innerHTML='<div class="sect">Credit owed to players</div>'+
+      '<div class="card"><div class="card-hd"><div class="card-date">₱'+Math.round(total).toLocaleString()+'</div>'+
+      '<div class="card-meta">across '+rows.length+' player'+(rows.length===1?'':'s')+'</div></div>'+
+      rows.map(function(x){
+        return '<div class="slot"><span class="slot-time" style="font-size:14px">'+esc(x.player_name||'')+'</span>'+
+          '<span style="font-weight:700;color:#2E7D4F">₱'+Math.round(Number(x.credit_balance)).toLocaleString()+'</span></div>';
+      }).join('')+'</div>'+
+      '<div style="padding:14px 4px;font-size:12px;color:var(--ink-soft);line-height:1.5">'+
+      'This comes off their next booking with you automatically — they will not be charged again for it. '+
+      'If someone would rather have the cash, hand it over and tell Nicolo so the record is cleared.</div>';
+  }).catch(function(){el.innerHTML='<div class="sect">Credit owed to players</div><div class="empty">Could not load</div>';});
+}
+
 function renderCoach(){
   badgeTabs();
   var el=document.getElementById('coach-body');
   if(_ktab==='money')return renderMoney(el);
+  if(_ktab==='credit')return renderCredits(el);
   if(_ktab==='req')return renderRequests(el);
   if(_ktab==='pay')return renderPayments(el);
   if(_ktab==='post')return renderPostScreen(el);
@@ -573,11 +640,45 @@ function renderSched(el){
   if(!up.length){el.innerHTML=postBtn+'<div class="empty"><span class="big">No sessions yet</span>Post the hours you are free and players can start booking.</div>';return;}
   el.innerHTML=postBtn+'<div class="sect">Upcoming</div>'+up.map(function(d){
     var rows=(d.blocks||[]).map(function(b){
-      var names=[];(b.bookings||[]).forEach(function(bk){if(bk.status!=='active')return;(bk.participants||[]).forEach(function(p){names.push(esc(p.display_name));});});
-      return '<div class="slot"><span class="slot-time">'+fmtTime(b.time_start)+' – '+fmtTime(b.time_end)+'</span>'+
-        (names.length?'<span style="font-size:13px;color:var(--ink-soft)">'+names.join(', ')+'</span>':'<span class="pill open">Open</span>')+'</div>';
+      // Each booked player is listed individually with a Remove control. Joins now
+      // auto-approve (2026-08-15), so this is how a bad pairing gets undone — and it
+      // credits the player back in full, whatever the timing, because the removal is
+      // the coach's decision and not theirs.
+      var people=[];
+      (b.bookings||[]).forEach(function(bk){
+        if(bk.status!=='active')return;
+        (bk.participants||[]).forEach(function(p){
+          // Show whether each player has actually paid the coaching fee. Without this the
+          // coach has no way of knowing who owes her — the Payments tab only lists
+          // receipts already uploaded, so anyone who has not paid is simply invisible
+          // (Hanny, Abraham, Ann and Carol on 18 Aug).
+          var cl=(p.lines||[]).filter(function(l){return l.component==='coach';})[0];
+          var st=cl?cl.status:null;
+          var paid = st==='approved'||st==='credited';
+          var tag = paid ? '<span style="font-size:11px;color:#2E7D4F;font-weight:700">paid</span>'
+                  : st==='proof_uploaded' ? '<span style="font-size:11px;color:#B7791F;font-weight:700">to confirm</span>'
+                  : '<span style="font-size:11px;color:#C2405F;font-weight:700">not paid</span>';
+          // Plenty of players will simply hand over cash on the court. Without this she
+          // has no way to record it and they stay "not paid" forever.
+          var payBtn = (cl && !paid && st!=='proof_uploaded')
+            ? '<button class="btn ghost sm" style="padding:4px 10px;font-size:11px;color:#2E7D4F" onclick="markPaidHere(\''+cl.id+'\',\''+esc(String(p.display_name||'').replace(/'/g,''))+'\')">Paid me</button>'
+            : '';
+          people.push('<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0">'+
+            '<span style="font-size:13px;color:var(--ink-soft)">'+esc(p.display_name)+'</span>'+
+            '<span style="display:flex;align-items:center;gap:8px">'+tag+payBtn+
+            '<button class="btn ghost sm" style="padding:4px 10px;font-size:11px" onclick="removeBk(\''+bk.id+'\',\''+esc(String(p.display_name||'').replace(/'/g,''))+'\')">Remove</button>'+
+            '</span>'+
+          '</div>');
+        });
+      });
+      return '<div class="slot" style="display:block"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'+
+        '<span class="slot-time">'+fmtTime(b.time_start)+' – '+fmtTime(b.time_end)+'</span>'+
+        (people.length?'':'<span class="pill open">Open</span>')+
+      '</div>'+(people.length?'<div style="margin-top:4px">'+people.join('')+'</div>':'')+'</div>';
     }).join('');
-    return '<div class="card"><div class="card-hd"><div class="card-date">'+fmtDate(d.session_date)+'</div><div class="card-meta">'+esc((d.venues&&d.venues.name)||'')+(d.scope==='mdp'?' · Match Day Pickle':'')+'</div></div>'+rows+'</div>';
+    return '<div class="card"><div class="card-hd"><div class="card-date">'+fmtDate(d.session_date)+'</div><div class="card-meta">'+esc((d.venues&&d.venues.name)||'')+(d.scope==='mdp'?' · Match Day Pickle':'')+'</div></div>'+rows+
+      '<div style="padding:10px 18px 16px"><button class="btn ghost sm" style="width:100%;color:#C2405F" onclick="cancelDay(\''+d.id+'\',\''+esc(fmtDate(d.session_date))+'\')">Cancel this whole session</button></div>'+
+    '</div>';
   }).join('');
 }
 function renderMoney(el){
