@@ -610,7 +610,9 @@ function renderPayments(el){
         '<div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:Fraunces,serif;font-size:17px;font-weight:600">'+esc(l.player_name||'')+'</div>'+
         '<div style="font-family:Fraunces,serif;font-size:19px;color:var(--sage);font-weight:700">'+peso(l.amount)+'</div></div>'+
         '<div class="card-meta">'+fmtDate(l.session_date)+' · '+fmtTime(l.time_start)+(l.gcash_ref?' · Ref '+esc(l.gcash_ref):'')+'</div>'+
-        (l.proof_url?'<a href="'+esc(l.proof_url)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:9px;color:var(--rose-deep);font-weight:600;font-size:13.5px">View receipt</a>':'')+
+        (l.proof_url?'<a href="'+esc(l.proof_url)+'" target="_blank" rel="noopener" style="display:block;margin-top:10px">'+
+          '<img src="'+esc(l.proof_url)+'" alt="receipt" style="width:100%;max-width:250px;border-radius:12px;border:1px solid rgba(0,0,0,.08);display:block">'+
+          '<span style="font-size:11px;color:var(--ink-soft)">tap to open full size</span></a>':'')+
         ai+cancelledNote+
         '<div style="display:flex;gap:9px;margin-top:13px"><button class="btn sm" style="flex:1" onclick="rvLine(\''+l.line_id+'\',\'approve\')">I got it</button>'+
         '<button class="btn ghost sm" style="flex:1" onclick="rvLine(\''+l.line_id+'\',\'reject\')">Not received</button></div></div></div>';
