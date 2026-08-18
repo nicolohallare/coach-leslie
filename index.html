@@ -669,8 +669,11 @@ function renderSched(el){
           var cl=(p.lines||[]).filter(function(l){return l.component==='coach';})[0];
           var st=cl?cl.status:null;
           var paid = st==='approved'||st==='credited';
+          // A receipt already waiting is confirmed in Payments, never here — so the tag
+          // becomes a link to that tab rather than offering a second, competing way to
+          // settle the same money.
           var tag = paid ? '<span style="font-size:11px;color:#2E7D4F;font-weight:700">paid</span>'
-                  : st==='proof_uploaded' ? '<span style="font-size:11px;color:#B7791F;font-weight:700">to confirm</span>'
+                  : st==='proof_uploaded' ? '<button onclick="coachTab(\'pay\')" style="background:none;border:none;padding:0;font-size:11px;color:#B7791F;font-weight:700;text-decoration:underline;cursor:pointer">receipt to confirm →</button>'
                   : '<span style="font-size:11px;color:#C2405F;font-weight:700">not paid</span>';
           // Plenty of players will simply hand over cash on the court. Without this she
           // has no way to record it and they stay "not paid" forever.
