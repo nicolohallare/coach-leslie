@@ -362,14 +362,16 @@ function confirmBook(id,btn){
     return reload();
   }).catch(function(e){btn.disabled=false;btn.textContent='Confirm booking';toast(e.message);});
 }
-function removeBk(id,who){
-  // Coach-initiated removal: always credits the player back in full, unlike a player
-  // cancelling on themselves (which follows the 12h / 48h rules).
-  if(!confirm('Remove '+(who||'this player')+' from the slot?\n\nThey get everything back as credit, whatever the timing. Let them know so they can rebook.'))return;
-  sb.rpc('coach_remove_booking',{p_booking:id,p_reason:null}).then(function(r){
+function removeBk(participantId,who){
+  // Removes ONE player. It used to take the booking id, so removing a partner also
+  // removed whoever booked — including a fee they had already paid (18 Aug).
+  if(!confirm('Remove '+(who||'this player')+' from the slot?\n\nOnly they are removed — anyone else in that hour stays. They get everything back as credit, whatever the timing.'))return;
+  var why=prompt('Reason (optional, kept on the record):','');
+  if(why===null)return;
+  sb.rpc('coach_remove_participant',{p_participant:participantId,p_reason:why.trim()||null}).then(function(r){
     if(r.error)throw new Error(r.error.message);
-    var c=(r.data&&r.data.credited)||0;
-    toast(c?'Removed — '+peso(c)+' credited back':'Removed');
+    var d=r.data||{};
+    toast((who||'Player')+' removed'+(Number(d.credited)>0?' — '+peso(d.credited)+' credited back':''));
     return reload();
   }).catch(function(e){toast(e.message||'Could not remove');});
 }
@@ -442,10 +444,12 @@ function pendingPays(){
   return out;
 }
 function badgeTabs(){
-  var j=pendingJoins().length,p=pendingPays().length;
-  var rq=document.getElementById('kt-req'),py=document.getElementById('kt-pay');
-  if(rq)rq.textContent='Requests'+(j?' ('+j+')':'');
-  if(py)py.textContent='Payments'+(p?' ('+p+')':'');
+  var j=pendingJoins().length;
+  var el=document.getElementById('kt-req'); if(el)el.textContent=j?'Requests ('+j+')':'Requests';
+  sb.rpc('coach_payments_pending').then(function(r){
+    var p=(r.data||[]).length;
+    var pe=document.getElementById('kt-pay'); if(pe)pe.textContent=p?'Payments ('+p+')':'Payments';
+  }).catch(function(){});
 }
 
 // Cancel a whole session — storm, injury, venue closed. Everyone who paid gets it all
@@ -587,23 +591,31 @@ function _joinCard(x){
 }
 
 function renderPayments(el){
-  var ps=pendingPays();
-  if(!ps.length){el.innerHTML='<div class="empty"><span class="big">All caught up</span>Receipts your players upload show up here for you to confirm.</div>';return;}
-  el.innerHTML=ps.map(function(x){
-    var l=x.l;
-    var ai=l.ai_status==='checking'?'<div class="ai busy">Reading the receipt… this takes about 10 seconds.<div class="bar"><i></i></div></div>'
-      :l.ai_status==='looks_good'?'<div class="ai good">'+esc(l.ai_notes||'Looks correct — your call to confirm')+'</div>'
-      :l.ai_status==='check_this'?'<div class="ai warn">'+esc(l.ai_notes||'Please check this one')+'</div>'
-      :'<div class="ai busy">No automatic check yet. <button class="linkbtn" onclick="recheck(\''+l.id+'\')">Check this receipt</button></div>';
-    return '<div class="card"><div style="padding:16px 18px">'+
-      '<div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:Fraunces,serif;font-size:17px;font-weight:600">'+esc(x.p.display_name)+'</div>'+
-      '<div style="font-family:Fraunces,serif;font-size:19px;color:var(--sage);font-weight:700">'+peso(l.amount)+'</div></div>'+
-      '<div class="card-meta">'+fmtDate(x.d.session_date)+' · '+fmtTime(x.b.time_start)+(l.gcash_ref?' · Ref '+esc(l.gcash_ref):'')+'</div>'+
-      (l.proof_url?'<a href="'+esc(l.proof_url)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:9px;color:var(--rose-deep);font-weight:600;font-size:13.5px">View receipt</a>':'')+
-      ai+
-      '<div style="display:flex;gap:9px;margin-top:13px"><button class="btn sm" style="flex:1" onclick="rvLine(\''+l.id+'\',\'approve\')">I got it</button>'+
-      '<button class="btn ghost sm" style="flex:1" onclick="rvLine(\''+l.id+'\',\'reject\')">Not received</button></div></div></div>';
-  }).join('');
+  // Read the receipts straight from the database rather than deriving them from the
+  // sessions list. A cancelled session drops out of that list, which hid every receipt
+  // still waiting to be confirmed — and confirming is exactly what releases the refund.
+  el.innerHTML='<div class="empty">Loading…</div>';
+  sb.rpc('coach_payments_pending').then(function(r){
+    var ps=r.data||[];
+    if(!ps.length){el.innerHTML='<div class="empty"><span class="big">All caught up</span>Receipts your players upload show up here for you to confirm.</div>';return;}
+    el.innerHTML=ps.map(function(l){
+      var ai=l.ai_status==='checking'?'<div class="ai busy">Reading the receipt… this takes about 10 seconds.<div class="bar"><i></i></div></div>'
+        :l.ai_status==='looks_good'?'<div class="ai good">'+esc(l.ai_notes||'Looks correct — your call to confirm')+'</div>'
+        :l.ai_status==='check_this'?'<div class="ai warn">'+esc(l.ai_notes||'Please check this one')+'</div>'
+        :'<div class="ai busy">No automatic check yet. <button class="linkbtn" onclick="recheck(\''+l.line_id+'\')">Check this receipt</button></div>';
+      var cancelledNote = l.session_cancelled
+        ? '<div class="ai warn" style="margin-top:8px">This session was cancelled. Confirm it if the money did reach you — it goes straight back to them as credit for a future session.</div>'
+        : '';
+      return '<div class="card"><div style="padding:16px 18px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-family:Fraunces,serif;font-size:17px;font-weight:600">'+esc(l.player_name||'')+'</div>'+
+        '<div style="font-family:Fraunces,serif;font-size:19px;color:var(--sage);font-weight:700">'+peso(l.amount)+'</div></div>'+
+        '<div class="card-meta">'+fmtDate(l.session_date)+' · '+fmtTime(l.time_start)+(l.gcash_ref?' · Ref '+esc(l.gcash_ref):'')+'</div>'+
+        (l.proof_url?'<a href="'+esc(l.proof_url)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:9px;color:var(--rose-deep);font-weight:600;font-size:13.5px">View receipt</a>':'')+
+        ai+cancelledNote+
+        '<div style="display:flex;gap:9px;margin-top:13px"><button class="btn sm" style="flex:1" onclick="rvLine(\''+l.line_id+'\',\'approve\')">I got it</button>'+
+        '<button class="btn ghost sm" style="flex:1" onclick="rvLine(\''+l.line_id+'\',\'reject\')">Not received</button></div></div></div>';
+    }).join('');
+  }).catch(function(){el.innerHTML='<div class="empty">Could not load</div>';});
 }
 
 function recheck(lineId){
@@ -666,7 +678,7 @@ function renderSched(el){
           people.push('<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0">'+
             '<span style="font-size:13px;color:var(--ink-soft)">'+esc(p.display_name)+'</span>'+
             '<span style="display:flex;align-items:center;gap:8px">'+tag+payBtn+
-            '<button class="btn ghost sm" style="padding:4px 10px;font-size:11px" onclick="removeBk(\''+bk.id+'\',\''+esc(String(p.display_name||'').replace(/'/g,''))+'\')">Remove</button>'+
+            '<button class="btn ghost sm" style="padding:4px 10px;font-size:11px" onclick="removeBk(\''+p.id+'\',\''+esc(String(p.display_name||'').replace(/'/g,''))+'\')">Remove</button>'+
             '</span>'+
           '</div>');
         });
